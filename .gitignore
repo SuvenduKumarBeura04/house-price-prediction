@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+venv/
+.venv/
+env/
+
+# Data (download separately from Kaggle — see data/README.md)
+data/*.csv
+data/*.txt
+!data/README.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# NOTE: models/*.joblib is intentionally NOT ignored below.
+# The trained pipeline file is usually only a few MB for this dataset,
+# and Streamlit Community Cloud needs it present in the repo to load the
+# app immediately after deployment (no separate "train on deploy" step).
+# If your file ever exceeds ~100MB, uncomment the line below and use
+# Git LFS or host the model file elsewhere (e.g. Hugging Face Hub) instead.
+# models/*.joblib
