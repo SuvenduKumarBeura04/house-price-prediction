@@ -20,8 +20,30 @@ import streamlit as st
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from src.features import full_feature_pipeline  # noqa: E402
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "house_price_pipeline.joblib"
-SKEWED_COLS_PATH = Path(__file__).resolve().parent.parent / "models" / "skewed_cols.json"
+
+def format_indian_currency(amount):
+    """Format a number with Indian-style comma grouping (e.g. 1,16,72,920)."""
+    amount = int(round(amount))
+    s = str(amount)
+    if len(s) <= 3:
+        return s
+    last_three = s[-3:]
+    remaining = s[:-3]
+    groups = []
+    while len(remaining) > 2:
+        groups.insert(0, remaining[-2:])
+        remaining = remaining[:-2]
+    if remaining:
+        groups.insert(0, remaining)
+    return ",".join(groups) + "," + last_three
+
+
+MODEL_PATH = (
+    Path(__file__).resolve().parent.parent / "models" / "house_price_pipeline.joblib"
+)
+SKEWED_COLS_PATH = (
+    Path(__file__).resolve().parent.parent / "models" / "skewed_cols.json"
+)
 
 # The trained pipeline was fit on ALL raw Ames Housing columns, so every prediction
 # needs every column present — even ones the user doesn't manually enter. These are
@@ -29,25 +51,71 @@ SKEWED_COLS_PATH = Path(__file__).resolve().parent.parent / "models" / "skewed_c
 # midpoint value) for everything the form doesn't ask about. The user's actual inputs
 # always override these where they overlap.
 DEFAULT_ROW = {
-    "MSSubClass": 20, "MSZoning": "RL", "LotFrontage": 70, "Street": "Pave",
-    "Alley": "None", "LotShape": "Reg", "LandContour": "Lvl", "Utilities": "AllPub",
-    "LotConfig": "Inside", "LandSlope": "Gtl", "Condition1": "Norm", "Condition2": "Norm",
-    "BldgType": "1Fam", "OverallCond": 5, "RoofStyle": "Gable", "RoofMatl": "CompShg",
-    "Exterior1st": "VinylSd", "Exterior2nd": "VinylSd", "MasVnrType": "None",
-    "MasVnrArea": 0, "ExterQual": "TA", "ExterCond": "TA", "Foundation": "PConc",
-    "BsmtQual": "TA", "BsmtCond": "TA", "BsmtExposure": "No", "BsmtFinType1": "Unf",
-    "BsmtFinSF1": 0, "BsmtFinType2": "Unf", "BsmtFinSF2": 0, "BsmtUnfSF": 500,
-    "Heating": "GasA", "HeatingQC": "TA", "CentralAir": "Y", "Electrical": "SBrkr",
-    "LowQualFinSF": 0, "KitchenAbvGr": 1, "KitchenQual": "TA", "TotRmsAbvGrd": 6,
-    "Functional": "Typ", "FireplaceQu": "None", "GarageType": "Attchd",
-    "GarageYrBlt": 2000, "GarageFinish": "Unf", "GarageQual": "TA", "GarageCond": "TA",
-    "PavedDrive": "Y", "WoodDeckSF": 0, "OpenPorchSF": 0, "EnclosedPorch": 0,
-    "3SsnPorch": 0, "ScreenPorch": 0, "PoolArea": 0, "PoolQC": "None", "Fence": "None",
-    "MiscFeature": "None", "MiscVal": 0, "MoSold": 6, "SaleType": "WD",
+    "MSSubClass": 20,
+    "MSZoning": "RL",
+    "LotFrontage": 70,
+    "Street": "Pave",
+    "Alley": "None",
+    "LotShape": "Reg",
+    "LandContour": "Lvl",
+    "Utilities": "AllPub",
+    "LotConfig": "Inside",
+    "LandSlope": "Gtl",
+    "Condition1": "Norm",
+    "Condition2": "Norm",
+    "BldgType": "1Fam",
+    "OverallCond": 5,
+    "RoofStyle": "Gable",
+    "RoofMatl": "CompShg",
+    "Exterior1st": "VinylSd",
+    "Exterior2nd": "VinylSd",
+    "MasVnrType": "None",
+    "MasVnrArea": 0,
+    "ExterQual": "TA",
+    "ExterCond": "TA",
+    "Foundation": "PConc",
+    "BsmtQual": "TA",
+    "BsmtCond": "TA",
+    "BsmtExposure": "No",
+    "BsmtFinType1": "Unf",
+    "BsmtFinSF1": 0,
+    "BsmtFinType2": "Unf",
+    "BsmtFinSF2": 0,
+    "BsmtUnfSF": 500,
+    "Heating": "GasA",
+    "HeatingQC": "TA",
+    "CentralAir": "Y",
+    "Electrical": "SBrkr",
+    "LowQualFinSF": 0,
+    "KitchenAbvGr": 1,
+    "KitchenQual": "TA",
+    "TotRmsAbvGrd": 6,
+    "Functional": "Typ",
+    "FireplaceQu": "None",
+    "GarageType": "Attchd",
+    "GarageYrBlt": 2000,
+    "GarageFinish": "Unf",
+    "GarageQual": "TA",
+    "GarageCond": "TA",
+    "PavedDrive": "Y",
+    "WoodDeckSF": 0,
+    "OpenPorchSF": 0,
+    "EnclosedPorch": 0,
+    "3SsnPorch": 0,
+    "ScreenPorch": 0,
+    "PoolArea": 0,
+    "PoolQC": "None",
+    "Fence": "None",
+    "MiscFeature": "None",
+    "MiscVal": 0,
+    "MoSold": 6,
+    "SaleType": "WD",
     "SaleCondition": "Normal",
 }
 
-st.set_page_config(page_title="House Price Predictor", page_icon="🏠", layout="centered")
+st.set_page_config(
+    page_title="House Price Predictor", page_icon="🏠", layout="centered"
+)
 
 st.title("🏠 House Price Predictor")
 st.write(
@@ -118,10 +186,30 @@ with col2:
     neighborhood = st.selectbox(
         "Neighborhood",
         [
-            "NAmes", "CollgCr", "OldTown", "Edwards", "Somerst", "Gilbert",
-            "NridgHt", "Sawyer", "NWAmes", "SawyerW", "BrkSide", "Crawfor",
-            "Mitchel", "NoRidge", "Timber", "IDOTRR", "ClearCr", "StoneBr",
-            "SWISU", "MeadowV", "Blmngtn", "BrDale", "Veenker", "NPkVill",
+            "NAmes",
+            "CollgCr",
+            "OldTown",
+            "Edwards",
+            "Somerst",
+            "Gilbert",
+            "NridgHt",
+            "Sawyer",
+            "NWAmes",
+            "SawyerW",
+            "BrkSide",
+            "Crawfor",
+            "Mitchel",
+            "NoRidge",
+            "Timber",
+            "IDOTRR",
+            "ClearCr",
+            "StoneBr",
+            "SWISU",
+            "MeadowV",
+            "Blmngtn",
+            "BrDale",
+            "Veenker",
+            "NPkVill",
             "Blueste",
         ],
     )
@@ -150,7 +238,9 @@ if predict_clicked:
         "YearRemodAdd": year_built,
         "TotalBsmtSF": total_bsmt_sf,
         "1stFlrSF": gr_liv_area * 0.6,
-        "2ndFlrSF": gr_liv_area * 0.4 if house_style in ["2Story", "2.5Fin", "2.5Unf"] else 0,
+        "2ndFlrSF": (
+            gr_liv_area * 0.4 if house_style in ["2Story", "2.5Fin", "2.5Unf"] else 0
+        ),
         "GarageCars": garage_cars,
         "GarageArea": garage_cars * 250,
         "FullBath": full_bath,
@@ -175,12 +265,18 @@ if predict_clicked:
         processed = full_feature_pipeline(input_row)
         processed = apply_skew_correction(processed, skewed_cols)
         prediction_log = pipeline.predict(processed)
-        prediction = np.expm1(prediction_log)[0]  # reverse the log1p used during training
+        prediction_usd = np.expm1(prediction_log)[
+            0
+        ]  # reverse the log1p used during training
 
-        st.success(f"### Estimated Sale Price: ${prediction:,.0f}")
+        USD_TO_INR = 83.5  # approximate — update as needed, exchange rates fluctuate
+        prediction_inr = prediction_usd * USD_TO_INR
+
+        st.success(f"### Estimated Sale Price: ₹{format_indian_currency(prediction_inr)}")
         st.caption(
-            "This is a model estimate based on historical Ames, Iowa housing "
-            "data — treat it as a ballpark figure, not an appraisal."
+            f"(≈ ${prediction_usd:,.0f} USD, converted at an approximate rate of "
+            f"1 USD = ₹{USD_TO_INR}) — this is a model estimate based on historical "
+            "Ames, Iowa housing data, treat it as a ballpark figure, not an appraisal."
         )
     except Exception as e:
         st.error(
